@@ -337,6 +337,14 @@ function updateUI() {
                     </div>
                     <div class="ue-average-container">
                         ${ueAverageText}
+                        <div class="ue-actions">
+                            <button type="button" class="btn btn-secondary btn-sm edit-ue" data-ue-index="${index}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm remove-ue" data-ue-index="${index}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 ${subjectsHtml}
@@ -346,13 +354,556 @@ function updateUI() {
         elementsList.appendChild(elementElement);
     });
     
+    // Ajouter les gestionnaires d'événements pour les boutons
+    document.querySelectorAll('.edit-ue').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const ueIndex = e.target.closest('.edit-ue').dataset.ueIndex;
+            editUE(ueIndex);
+        });
+    });
+    
+    document.querySelectorAll('.remove-ue').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const ueIndex = e.target.closest('.remove-ue').dataset.ueIndex;
+            removeUE(ueIndex);
+        });
+    });
+    
     updatePredictions();
+}
+
+// Fonctions pour modifier les éléments
+function editUE(ueIndex) {
+    const ue = elements[ueIndex];
+    
+    // Sauvegarder l'index de l'UE en cours de modification
+    document.getElementById('ueName').dataset.editingIndex = ueIndex;
+    document.getElementById('ueName').value = ue.name;
+    document.getElementById('ueCoefficient').value = ue.coefficient;
+    
+    // Créer les formulaires de matières
+    const ueSubjects = document.getElementById('ueSubjects');
+    ueSubjects.innerHTML = '';
+    
+    ue.subjects.forEach((subject, subjectIndex) => {
+        const subjectForm = document.createElement('div');
+        subjectForm.className = 'ue-subject-form mb-3 p-3 border rounded';
+        subjectForm.innerHTML = `
+            <div class="mb-3">
+                <label class="form-label">Nom de la matière</label>
+                <input type="text" class="form-control ue-subject-name" value="${subject.name}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Coefficient</label>
+                <input type="number" class="form-control ue-subject-coefficient" min="1" value="${subject.coefficient}">
+            </div>
+            <div class="mb-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input subject-type" type="radio" name="subjectType" value="evaluations" ${subject.evaluations.length > 1 ? 'checked' : ''}>
+                    <label class="form-check-label">Ajouter des évaluations</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input subject-type" type="radio" name="subjectType" value="global" ${subject.evaluations.length === 1 ? 'checked' : ''}>
+                    <label class="form-check-label">Note globale</label>
+                </div>
+            </div>
+            <div class="evaluations-section" style="display: ${subject.evaluations.length > 1 ? 'block' : 'none'}">
+                <div class="mb-3">
+                    <button type="button" class="btn btn-primary btn-sm add-evaluation">Ajouter une évaluation</button>
+                    <div class="evaluations-list mt-3">
+                        ${subject.evaluations.map((evaluation, index) => `
+                            <div class="evaluation-form mb-3 p-3 border rounded">
+                                <div class="mb-3">
+                                    <label class="form-label">Nom de l'évaluation</label>
+                                    <input type="text" class="form-control evaluation-name" value="${evaluation.name}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Coefficient</label>
+                                    <input type="number" class="form-control evaluation-coefficient" min="1" value="${evaluation.coefficient}">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input evaluation-use-interval" type="checkbox" ${evaluation.noteMin !== evaluation.noteMax ? 'checked' : ''}>
+                                        <label class="form-check-label">
+                                            Utiliser un intervalle de notes
+                                        </label>
+                                    </div>
+                                    <div class="evaluation-single-note mb-3" style="display: ${evaluation.noteMin === evaluation.noteMax ? 'block' : 'none'}">
+                                        <label class="form-label">Note</label>
+                                        <input type="number" class="form-control evaluation-note" min="0" max="20" step="0.1" value="${evaluation.noteMin}">
+                                    </div>
+                                    <div class="evaluation-interval-note mb-3" style="display: ${evaluation.noteMin !== evaluation.noteMax ? 'block' : 'none'}">
+                                        <label class="form-label">Intervalle de notes</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control evaluation-note-min" placeholder="Min" min="0" max="20" step="0.1" value="${evaluation.noteMin}">
+                                            <span class="input-group-text">à</span>
+                                            <input type="number" class="form-control evaluation-note-max" placeholder="Max" min="0" max="20" step="0.1" value="${evaluation.noteMax}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-danger btn-sm remove-evaluation">Supprimer</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            <div class="global-note-section" style="display: ${subject.evaluations.length === 1 ? 'block' : 'none'}">
+                <div class="mb-3">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input global-use-interval" type="checkbox" ${subject.evaluations[0].noteMin !== subject.evaluations[0].noteMax ? 'checked' : ''}>
+                        <label class="form-check-label">
+                            Utiliser un intervalle de notes
+                        </label>
+                    </div>
+                    <div class="global-single-note mb-3" style="display: ${subject.evaluations[0].noteMin === subject.evaluations[0].noteMax ? 'block' : 'none'}">
+                        <label class="form-label">Note</label>
+                        <input type="number" class="form-control global-note" min="0" max="20" step="0.1" value="${subject.evaluations[0].noteMin}">
+                    </div>
+                    <div class="global-interval-note mb-3" style="display: ${subject.evaluations[0].noteMin !== subject.evaluations[0].noteMax ? 'block' : 'none'}">
+                        <label class="form-label">Intervalle de notes</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control global-note-min" placeholder="Min" min="0" max="20" step="0.1" value="${subject.evaluations[0].noteMin}">
+                            <span class="input-group-text">à</span>
+                            <input type="number" class="form-control global-note-max" placeholder="Max" min="0" max="20" step="0.1" value="${subject.evaluations[0].noteMax}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm remove-ue-subject">Supprimer</button>
+        `;
+        
+        ueSubjects.appendChild(subjectForm);
+        
+        // Gérer le changement de type de matière
+        const subjectTypeRadios = subjectForm.querySelectorAll('.subject-type');
+        subjectTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const evaluationsSection = subjectForm.querySelector('.evaluations-section');
+                const globalNoteSection = subjectForm.querySelector('.global-note-section');
+                
+                if (e.target.value === 'evaluations') {
+                    evaluationsSection.style.display = 'block';
+                    globalNoteSection.style.display = 'none';
+                } else {
+                    evaluationsSection.style.display = 'none';
+                    globalNoteSection.style.display = 'block';
+                }
+            });
+        });
+        
+        // Gérer la case à cocher d'intervalle pour la note globale
+        const globalUseInterval = subjectForm.querySelector('.global-use-interval');
+        globalUseInterval.addEventListener('change', (e) => {
+            const singleNote = subjectForm.querySelector('.global-single-note');
+            const intervalNote = subjectForm.querySelector('.global-interval-note');
+            
+            if (e.target.checked) {
+                singleNote.style.display = 'none';
+                intervalNote.style.display = 'block';
+            } else {
+                singleNote.style.display = 'block';
+                intervalNote.style.display = 'none';
+            }
+        });
+        
+        // Gérer le bouton d'ajout d'évaluation
+        const addEvaluationButton = subjectForm.querySelector('.add-evaluation');
+        addEvaluationButton.addEventListener('click', () => {
+            const evaluationForm = document.createElement('div');
+            evaluationForm.className = 'evaluation-form mb-3 p-3 border rounded';
+            evaluationForm.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Nom de l'évaluation</label>
+                    <input type="text" class="form-control evaluation-name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Coefficient</label>
+                    <input type="number" class="form-control evaluation-coefficient" min="1" value="1">
+                </div>
+                <div class="mb-3">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input evaluation-use-interval" type="checkbox">
+                        <label class="form-check-label">
+                            Utiliser un intervalle de notes
+                        </label>
+                    </div>
+                    <div class="evaluation-single-note mb-3">
+                        <label class="form-label">Note</label>
+                        <input type="number" class="form-control evaluation-note" min="0" max="20" step="0.1">
+                    </div>
+                    <div class="evaluation-interval-note mb-3" style="display: none;">
+                        <label class="form-label">Intervalle de notes</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control evaluation-note-min" placeholder="Min" min="0" max="20" step="0.1">
+                            <span class="input-group-text">à</span>
+                            <input type="number" class="form-control evaluation-note-max" placeholder="Max" min="0" max="20" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm remove-evaluation">Supprimer</button>
+            `;
+            
+            // Ajouter le formulaire à la liste des évaluations
+            const evaluationsList = subjectForm.querySelector('.evaluations-list');
+            if (evaluationsList) {
+                evaluationsList.appendChild(evaluationForm);
+                
+                // Gérer la case à cocher d'intervalle
+                const useIntervalCheckbox = evaluationForm.querySelector('.evaluation-use-interval');
+                useIntervalCheckbox.addEventListener('change', (e) => {
+                    const singleNote = evaluationForm.querySelector('.evaluation-single-note');
+                    const intervalNote = evaluationForm.querySelector('.evaluation-interval-note');
+                    
+                    if (e.target.checked) {
+                        singleNote.style.display = 'none';
+                        intervalNote.style.display = 'block';
+                    } else {
+                        singleNote.style.display = 'block';
+                        intervalNote.style.display = 'none';
+                    }
+                });
+                
+                // Gérer le bouton de suppression
+                const removeButton = evaluationForm.querySelector('.remove-evaluation');
+                removeButton.addEventListener('click', () => {
+                    evaluationForm.remove();
+                });
+            }
+        });
+        
+        // Gérer le bouton de suppression
+        const removeButton = subjectForm.querySelector('.remove-ue-subject');
+        removeButton.addEventListener('click', () => {
+            subjectForm.remove();
+        });
+    });
+}
+
+function removeUE(ueIndex) {
+    elements.splice(ueIndex, 1);
+    setCookie('elements', JSON.stringify(elements), 365);
+    updateUI();
+}
+
+function editSubject(ueIndex, subjectIndex) {
+    const subject = elements[ueIndex].subjects[subjectIndex];
+    
+    // Créer un nouveau formulaire de matière
+    const subjectForm = document.createElement('div');
+    subjectForm.className = 'ue-subject-form mb-3 p-3 border rounded';
+    subjectForm.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Nom de la matière</label>
+            <input type="text" class="form-control ue-subject-name" value="${subject.name}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Coefficient</label>
+            <input type="number" class="form-control ue-subject-coefficient" min="1" value="${subject.coefficient}">
+        </div>
+        <div class="mb-3">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input subject-type" type="radio" name="subjectType" value="evaluations" ${subject.evaluations.length > 1 ? 'checked' : ''}>
+                <label class="form-check-label">Ajouter des évaluations</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input subject-type" type="radio" name="subjectType" value="global" ${subject.evaluations.length === 1 ? 'checked' : ''}>
+                <label class="form-check-label">Note globale</label>
+            </div>
+        </div>
+        <div class="evaluations-section" style="display: ${subject.evaluations.length > 1 ? 'block' : 'none'}">
+            <div class="mb-3">
+                <button type="button" class="btn btn-primary btn-sm add-evaluation">Ajouter une évaluation</button>
+                <div class="evaluations-list mt-3">
+                    ${subject.evaluations.map((evaluation, index) => `
+                        <div class="evaluation-form mb-3 p-3 border rounded">
+                            <div class="mb-3">
+                                <label class="form-label">Nom de l'évaluation</label>
+                                <input type="text" class="form-control evaluation-name" value="${evaluation.name}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Coefficient</label>
+                                <input type="number" class="form-control evaluation-coefficient" min="1" value="${evaluation.coefficient}">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input evaluation-use-interval" type="checkbox" ${evaluation.noteMin !== evaluation.noteMax ? 'checked' : ''}>
+                                    <label class="form-check-label">
+                                        Utiliser un intervalle de notes
+                                    </label>
+                                </div>
+                                <div class="evaluation-single-note mb-3" style="display: ${evaluation.noteMin === evaluation.noteMax ? 'block' : 'none'}">
+                                    <label class="form-label">Note</label>
+                                    <input type="number" class="form-control evaluation-note" min="0" max="20" step="0.1" value="${evaluation.noteMin}">
+                                </div>
+                                <div class="evaluation-interval-note mb-3" style="display: ${evaluation.noteMin !== evaluation.noteMax ? 'block' : 'none'}">
+                                    <label class="form-label">Intervalle de notes</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control evaluation-note-min" placeholder="Min" min="0" max="20" step="0.1" value="${evaluation.noteMin}">
+                                        <span class="input-group-text">à</span>
+                                        <input type="number" class="form-control evaluation-note-max" placeholder="Max" min="0" max="20" step="0.1" value="${evaluation.noteMax}">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-sm remove-evaluation">Supprimer</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+        <div class="global-note-section" style="display: ${subject.evaluations.length === 1 ? 'block' : 'none'}">
+            <div class="mb-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input global-use-interval" type="checkbox" ${subject.evaluations[0].noteMin !== subject.evaluations[0].noteMax ? 'checked' : ''}>
+                    <label class="form-check-label">
+                        Utiliser un intervalle de notes
+                    </label>
+                </div>
+                <div class="global-single-note mb-3" style="display: ${subject.evaluations[0].noteMin === subject.evaluations[0].noteMax ? 'block' : 'none'}">
+                    <label class="form-label">Note</label>
+                    <input type="number" class="form-control global-note" min="0" max="20" step="0.1" value="${subject.evaluations[0].noteMin}">
+                </div>
+                <div class="global-interval-note mb-3" style="display: ${subject.evaluations[0].noteMin !== subject.evaluations[0].noteMax ? 'block' : 'none'}">
+                    <label class="form-label">Intervalle de notes</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control global-note-min" placeholder="Min" min="0" max="20" step="0.1" value="${subject.evaluations[0].noteMin}">
+                        <span class="input-group-text">à</span>
+                        <input type="number" class="form-control global-note-max" placeholder="Max" min="0" max="20" step="0.1" value="${subject.evaluations[0].noteMax}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm remove-ue-subject">Supprimer</button>
+    `;
+    
+    // Supprimer la matière actuelle
+    elements[ueIndex].subjects.splice(subjectIndex, 1);
+    setCookie('elements', JSON.stringify(elements), 365);
+    
+    // Ajouter le formulaire à l'UE
+    const ueSubjects = document.getElementById('ueSubjects');
+    ueSubjects.innerHTML = '';
+    ueSubjects.appendChild(subjectForm);
+    
+    // Mettre à jour l'interface
+    updateUI();
+}
+
+function removeSubject(ueIndex, subjectIndex) {
+    elements[ueIndex].subjects.splice(subjectIndex, 1);
+    setCookie('elements', JSON.stringify(elements), 365);
+    updateUI();
+}
+
+function editEvaluation(ueIndex, subjectIndex, evalIndex) {
+    const evaluation = elements[ueIndex].subjects[subjectIndex].evaluations[evalIndex];
+    
+    // Créer un nouveau formulaire d'évaluation
+    const evaluationForm = document.createElement('div');
+    evaluationForm.className = 'evaluation-form mb-3 p-3 border rounded';
+    evaluationForm.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Nom de l'évaluation</label>
+            <input type="text" class="form-control evaluation-name" value="${evaluation.name}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Coefficient</label>
+            <input type="number" class="form-control evaluation-coefficient" min="1" value="${evaluation.coefficient}">
+        </div>
+        <div class="mb-3">
+            <div class="form-check mb-2">
+                <input class="form-check-input evaluation-use-interval" type="checkbox" ${evaluation.noteMin !== evaluation.noteMax ? 'checked' : ''}>
+                <label class="form-check-label">
+                    Utiliser un intervalle de notes
+                </label>
+            </div>
+            <div class="evaluation-single-note mb-3" style="display: ${evaluation.noteMin === evaluation.noteMax ? 'block' : 'none'}">
+                <label class="form-label">Note</label>
+                <input type="number" class="form-control evaluation-note" min="0" max="20" step="0.1" value="${evaluation.noteMin}">
+            </div>
+            <div class="evaluation-interval-note mb-3" style="display: ${evaluation.noteMin !== evaluation.noteMax ? 'block' : 'none'}">
+                <label class="form-label">Intervalle de notes</label>
+                <div class="input-group">
+                    <input type="number" class="form-control evaluation-note-min" placeholder="Min" min="0" max="20" step="0.1" value="${evaluation.noteMin}">
+                    <span class="input-group-text">à</span>
+                    <input type="number" class="form-control evaluation-note-max" placeholder="Max" min="0" max="20" step="0.1" value="${evaluation.noteMax}">
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm remove-evaluation">Supprimer</button>
+    `;
+    
+    // Supprimer l'évaluation actuelle
+    elements[ueIndex].subjects[subjectIndex].evaluations.splice(evalIndex, 1);
+    setCookie('elements', JSON.stringify(elements), 365);
+    
+    // Ajouter le formulaire à la matière
+    const subjectForm = document.createElement('div');
+    subjectForm.className = 'ue-subject-form mb-3 p-3 border rounded';
+    subjectForm.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Nom de la matière</label>
+            <input type="text" class="form-control ue-subject-name" value="${elements[ueIndex].subjects[subjectIndex].name}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Coefficient</label>
+            <input type="number" class="form-control ue-subject-coefficient" min="1" value="${elements[ueIndex].subjects[subjectIndex].coefficient}">
+        </div>
+        <div class="mb-3">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input subject-type" type="radio" name="subjectType" value="evaluations" checked>
+                <label class="form-check-label">Ajouter des évaluations</label>
+            </div>
+        </div>
+        <div class="evaluations-section">
+            <div class="mb-3">
+                <button type="button" class="btn btn-primary btn-sm add-evaluation">Ajouter une évaluation</button>
+                <div class="evaluations-list mt-3">
+                    ${elements[ueIndex].subjects[subjectIndex].evaluations.map(eval => `
+                        <div class="evaluation-form mb-3 p-3 border rounded">
+                            <div class="mb-3">
+                                <label class="form-label">Nom de l'évaluation</label>
+                                <input type="text" class="form-control evaluation-name" value="${eval.name}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Coefficient</label>
+                                <input type="number" class="form-control evaluation-coefficient" min="1" value="${eval.coefficient}">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input evaluation-use-interval" type="checkbox" ${eval.noteMin !== eval.noteMax ? 'checked' : ''}>
+                                    <label class="form-check-label">
+                                        Utiliser un intervalle de notes
+                                    </label>
+                                </div>
+                                <div class="evaluation-single-note mb-3" style="display: ${eval.noteMin === eval.noteMax ? 'block' : 'none'}">
+                                    <label class="form-label">Note</label>
+                                    <input type="number" class="form-control evaluation-note" min="0" max="20" step="0.1" value="${eval.noteMin}">
+                                </div>
+                                <div class="evaluation-interval-note mb-3" style="display: ${eval.noteMin !== eval.noteMax ? 'block' : 'none'}">
+                                    <label class="form-label">Intervalle de notes</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control evaluation-note-min" placeholder="Min" min="0" max="20" step="0.1" value="${eval.noteMin}">
+                                        <span class="input-group-text">à</span>
+                                        <input type="number" class="form-control evaluation-note-max" placeholder="Max" min="0" max="20" step="0.1" value="${eval.noteMax}">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-sm remove-evaluation">Supprimer</button>
+                        </div>
+                    `).join('')}
+                    ${evaluationForm.outerHTML}
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm remove-ue-subject">Supprimer</button>
+    `;
+    
+    // Supprimer la matière actuelle
+    elements[ueIndex].subjects.splice(subjectIndex, 1);
+    setCookie('elements', JSON.stringify(elements), 365);
+    
+    // Ajouter le formulaire à l'UE
+    const ueSubjects = document.getElementById('ueSubjects');
+    ueSubjects.innerHTML = '';
+    ueSubjects.appendChild(subjectForm);
+    
+    // Mettre à jour l'interface
+    updateUI();
+}
+
+function removeEvaluation(ueIndex, subjectIndex, evalIndex) {
+    elements[ueIndex].subjects[subjectIndex].evaluations.splice(evalIndex, 1);
+    setCookie('elements', JSON.stringify(elements), 365);
+    updateUI();
+}
+
+// Mise à jour de la moyenne précédente
+document.getElementById('previousAverage').addEventListener('change', (e) => {
+    previousAverage = parseFloat(e.target.value) || 10;
+    setCookie('previousAverage', previousAverage, 365);
+    updatePredictions();
+});
+
+// Calcul des prédictions
+function updatePredictions() {
+    let totalCoefficient = 0;
+    let minTotal = 0;
+    let maxTotal = 0;
+    
+    elements.forEach(element => {
+        if (element.type === 'ue') {
+            let ueMinTotal = 0;
+            let ueMaxTotal = 0;
+            let ueTotalCoefficient = 0;
+            
+            element.subjects.forEach(subject => {
+                let subjectMinTotal = 0;
+                let subjectMaxTotal = 0;
+                let subjectTotalCoefficient = 0;
+                
+                subject.evaluations.forEach(evaluation => {
+                    if (evaluation.noteMin !== null && evaluation.noteMax !== null) {
+                        subjectMinTotal += evaluation.noteMin * evaluation.coefficient;
+                        subjectMaxTotal += evaluation.noteMax * evaluation.coefficient;
+                        subjectTotalCoefficient += evaluation.coefficient;
+                    }
+                });
+                
+                if (subjectTotalCoefficient > 0) {
+                    const subjectMinAverage = subjectMinTotal / subjectTotalCoefficient;
+                    const subjectMaxAverage = subjectMaxTotal / subjectTotalCoefficient;
+                    
+                    ueMinTotal += subjectMinAverage * subject.coefficient;
+                    ueMaxTotal += subjectMaxAverage * subject.coefficient;
+                    ueTotalCoefficient += subject.coefficient;
+                }
+            });
+            
+            if (ueTotalCoefficient > 0) {
+                const ueMinAverage = ueMinTotal / ueTotalCoefficient;
+                const ueMaxAverage = ueMaxTotal / ueTotalCoefficient;
+                
+                minTotal += ueMinAverage * element.coefficient;
+                maxTotal += ueMaxAverage * element.coefficient;
+                totalCoefficient += element.coefficient;
+            }
+        }
+    });
+    
+    let minAverage = 0;
+    let maxAverage = 0;
+    let successProbability = 0;
+
+    if (totalCoefficient > 0) {
+        minAverage = minTotal / totalCoefficient;
+        maxAverage = maxTotal / totalCoefficient;
+        
+        const minAnnualAverage = (previousAverage + minAverage) / 2;
+        const maxAnnualAverage = (previousAverage + maxAverage) / 2;
+        
+        if (minAnnualAverage >= 10) {
+            successProbability = 100;
+        } else if (maxAnnualAverage < 10) {
+            successProbability = 0;
+        } else {
+            const neededAverage = 2 * 10 - previousAverage;
+        
+            successProbability = ((maxAverage - neededAverage) / (maxAverage - minAverage)) * 100;
+        }
+    }
+
+    // Mise à jour de l'interface
+    document.getElementById('minAverage').textContent = minAverage.toFixed(2);
+    document.getElementById('maxAverage').textContent = maxAverage.toFixed(2);
+    document.getElementById('successProbability').textContent =
+        `${successProbability.toFixed(1)}%`;
 }
 
 // Ajout d'un élément
 document.getElementById('addElement').addEventListener('click', () => {
     const name = document.getElementById('ueName').value;
     const coefficient = parseInt(document.getElementById('ueCoefficient').value);
+    const editingIndex = document.getElementById('ueName').dataset.editingIndex;
     
     if (name && coefficient > 0) {
         // Récupérer les matières de l'UE
@@ -435,7 +986,16 @@ document.getElementById('addElement').addEventListener('click', () => {
             }
         });
         
-        elements.push({ type: 'ue', name, coefficient, subjects });
+        if (editingIndex !== undefined) {
+            // Mettre à jour l'UE existante
+            elements[editingIndex] = { type: 'ue', name, coefficient, subjects };
+            // Supprimer l'index d'édition
+            delete document.getElementById('ueName').dataset.editingIndex;
+        } else {
+            // Ajouter une nouvelle UE
+            elements.push({ type: 'ue', name, coefficient, subjects });
+        }
+        
         setCookie('elements', JSON.stringify(elements), 365);
         updateUI();
         
@@ -444,89 +1004,4 @@ document.getElementById('addElement').addEventListener('click', () => {
         document.getElementById('ueCoefficient').value = '6';
         document.getElementById('ueSubjects').innerHTML = '';
     }
-});
-
-// Mise à jour de la moyenne précédente
-document.getElementById('previousAverage').addEventListener('change', (e) => {
-    previousAverage = parseFloat(e.target.value) || 10;
-    setCookie('previousAverage', previousAverage, 365);
-    updatePredictions();
-});
-
-// Calcul des prédictions
-function updatePredictions() {
-    let totalCoefficient = 0;
-    let minTotal = 0;
-    let maxTotal = 0;
-    
-    elements.forEach(element => {
-        if (element.type === 'ue') {
-            let ueMinTotal = 0;
-            let ueMaxTotal = 0;
-            let ueTotalCoefficient = 0;
-            
-            element.subjects.forEach(subject => {
-                let subjectMinTotal = 0;
-                let subjectMaxTotal = 0;
-                let subjectTotalCoefficient = 0;
-                
-                subject.evaluations.forEach(evaluation => {
-                    if (evaluation.noteMin !== null && evaluation.noteMax !== null) {
-                        subjectMinTotal += evaluation.noteMin * evaluation.coefficient;
-                        subjectMaxTotal += evaluation.noteMax * evaluation.coefficient;
-                        subjectTotalCoefficient += evaluation.coefficient;
-                    }
-                });
-                
-                if (subjectTotalCoefficient > 0) {
-                    const subjectMinAverage = subjectMinTotal / subjectTotalCoefficient;
-                    const subjectMaxAverage = subjectMaxTotal / subjectTotalCoefficient;
-                    
-                    ueMinTotal += subjectMinAverage * subject.coefficient;
-                    ueMaxTotal += subjectMaxAverage * subject.coefficient;
-                    ueTotalCoefficient += subject.coefficient;
-                }
-            });
-            
-            if (ueTotalCoefficient > 0) {
-                const ueMinAverage = ueMinTotal / ueTotalCoefficient;
-                const ueMaxAverage = ueMaxTotal / ueTotalCoefficient;
-                
-                minTotal += ueMinAverage * element.coefficient;
-                maxTotal += ueMaxAverage * element.coefficient;
-                totalCoefficient += element.coefficient;
-            }
-        }
-    });
-    
-    let minAverage = 0;
-    let maxAverage = 0;
-    let successProbability = 0;
-    
-    if (totalCoefficient > 0) {
-        minAverage = minTotal / totalCoefficient;
-        maxAverage = maxTotal / totalCoefficient;
-        
-        // Calcul de la moyenne minimale et maximale sur l'année
-        const annualMinAverage = (previousAverage + minAverage) / 2;
-        const annualMaxAverage = (previousAverage + maxAverage) / 2;
-        
-        // Calcul de la probabilité de réussite
-        if (annualMinAverage >= 10) {
-            successProbability = 100;  // Si la pire moyenne annuelle possible est >= 10, 100% de réussite
-        } else if (annualMaxAverage < 10) {
-            successProbability = 0;    // Si la meilleure moyenne annuelle possible est < 10, 0% de réussite
-        } else {
-            // Calcul de la probabilité proportionnelle
-            const range = annualMaxAverage - annualMinAverage;
-            const distanceFrom10 = 10 - annualMinAverage;
-            successProbability = (distanceFrom10 / range) * 100;
-        }
-    }
-    
-    // Mise à jour de l'interface
-    document.getElementById('minAverage').textContent = minAverage.toFixed(2);
-    document.getElementById('maxAverage').textContent = maxAverage.toFixed(2);
-    document.getElementById('successProbability').textContent = 
-        `${successProbability.toFixed(1)}%`;
-} 
+}); 
