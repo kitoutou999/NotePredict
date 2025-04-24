@@ -1,0 +1,216 @@
+:root {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --border-color: #333333;
+    --input-bg: #2d2d2d;
+    --input-border: #444444;
+    --card-bg: #2d2d2d;
+    --btn-primary-bg: #0d6efd;
+    --btn-danger-bg: #dc3545;
+    --btn-primary-hover: #0b5ed7;
+    --btn-danger-hover: #bb2d3b;
+    --header-bg: #1f1f1f;
+    --modal-bg: #2d2d2d;
+    --modal-header-bg: #1f1f1f;
+    --modal-border-color: #404040;
+    --btn-secondary-bg: #3d3d3d;
+    --btn-secondary-color: #ffffff;
+    --btn-secondary-border: #404040;
+    --btn-secondary-hover-bg: #4d4d4d;
+    --btn-secondary-hover-border: #505050;
+    --primary-color: #ffffff;
+    --prediction-color: #0d6efd;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: none;
+    border-radius: 10px;
+    background-color: var(--card-bg);
+}
+
+.card-header {
+    background-color: var(--header-bg);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.card-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 5px;
+    border-radius: 5px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.subject-info {
+    flex-grow: 1;
+}
+
+.subject-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    border-radius: 5px;
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    border-color: var(--btn-secondary-border);
+    color: var(--btn-secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--btn-secondary-hover-bg);
+    border-color: var(--btn-secondary-hover-border);
+    color: var(--btn-secondary-color);
+}
+
+#predictions {
+    font-size: 1.1rem;
+}
+
+#predictions p {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+#predictions span {
+    font-weight: bold;
+    color: var(--prediction-color);
+}
+
+.input-group {
+    max-width: 300px;
+}
+
+.form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+.form-control:focus {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--btn-primary-bg);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-label {
+    color: var(--text-color);
+}
+
+.input-group-text {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+/* Modal styles */
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.modal-header {
+    background-color: var(--modal-header-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-footer {
+    background-color: var(--modal-header-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-title {
+    color: var(--primary-color);
+}
+
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+.btn-primary {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+}
+
+.btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+    border-color: var(--btn-primary-hover);
+}
+
+.btn-danger {
+    background-color: var(--btn-danger-bg);
+    border-color: var(--btn-danger-bg);
+}
+
+.btn-danger:hover {
+    background-color: var(--btn-danger-hover);
+    border-color: var(--btn-danger-hover);
+}
+
+h1 {
+    color: var(--primary-color);
+}
+
+.form-label {
+    color: var(--primary-color);
+}
+
+.ue-average {
+    color: var(--prediction-color);
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.ue-average-container {
+    display: flex;
+    align-items: center;
+} 

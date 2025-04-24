@@ -1,0 +1,532 @@
+// Configuration des cookies
+function setCookie(name, value, days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = name + "=" + value + ";" + expires + ";path=/";
+}
+
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+// Gestion des éléments
+let elements = JSON.parse(getCookie('elements') || '[]');
+let previousAverage = parseFloat(getCookie('previousAverage') || '10');
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', () => {
+    // Gestion du formulaire
+    const useInterval = document.getElementById('useInterval');
+    if (useInterval) {
+        useInterval.addEventListener('change', (e) => {
+            const singleNoteInput = document.getElementById('singleNoteInput');
+            const intervalNoteInput = document.getElementById('intervalNoteInput');
+            
+            if (e.target.checked) {
+                singleNoteInput.style.display = 'none';
+                intervalNoteInput.style.display = 'block';
+            } else {
+                singleNoteInput.style.display = 'block';
+                intervalNoteInput.style.display = 'none';
+            }
+        });
+    }
+
+    // Gestion du type d'élément
+    document.querySelectorAll('input[name="elementType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const subjectForm = document.getElementById('subjectForm');
+            const ueForm = document.getElementById('ueForm');
+            
+            if (e.target.value === 'subject') {
+                subjectForm.style.display = 'block';
+                ueForm.style.display = 'none';
+            } else {
+                subjectForm.style.display = 'none';
+                ueForm.style.display = 'block';
+            }
+        });
+    });
+
+    // Ajout d'une matière à une UE
+    const addUESubject = document.getElementById('addUESubject');
+    if (addUESubject) {
+        addUESubject.addEventListener('click', () => {
+            const subjectForm = document.createElement('div');
+            subjectForm.className = 'ue-subject-form mb-3 p-3 border rounded';
+            subjectForm.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Nom de la matière</label>
+                    <input type="text" class="form-control ue-subject-name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Coefficient</label>
+                    <input type="number" class="form-control ue-subject-coefficient" min="1" value="1">
+                </div>
+                <div class="mb-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input subject-type" type="radio" name="subjectType" value="evaluations" checked>
+                        <label class="form-check-label">Ajouter des évaluations</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input subject-type" type="radio" name="subjectType" value="global">
+                        <label class="form-check-label">Note globale</label>
+                    </div>
+                </div>
+                <div class="evaluations-section">
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary btn-sm add-evaluation">Ajouter une évaluation</button>
+                        <div class="evaluations-list mt-3">
+                            <!-- Les évaluations seront ajoutées ici -->
+                        </div>
+                    </div>
+                </div>
+                <div class="global-note-section" style="display: none;">
+                    <div class="mb-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input global-use-interval" type="checkbox">
+                            <label class="form-check-label">
+                                Utiliser un intervalle de notes
+                            </label>
+                        </div>
+                        <div class="global-single-note mb-3">
+                            <label class="form-label">Note</label>
+                            <input type="number" class="form-control global-note" min="0" max="20" step="0.1">
+                        </div>
+                        <div class="global-interval-note mb-3" style="display: none;">
+                            <label class="form-label">Intervalle de notes</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control global-note-min" placeholder="Min" min="0" max="20" step="0.1">
+                                <span class="input-group-text">à</span>
+                                <input type="number" class="form-control global-note-max" placeholder="Max" min="0" max="20" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm remove-ue-subject">Supprimer</button>
+            `;
+            
+            // Ajouter le formulaire à l'UE
+            const ueSubjects = document.getElementById('ueSubjects');
+            if (ueSubjects) {
+                ueSubjects.appendChild(subjectForm);
+                
+                // Gérer le changement de type de matière
+                const subjectTypeRadios = subjectForm.querySelectorAll('.subject-type');
+                subjectTypeRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const evaluationsSection = subjectForm.querySelector('.evaluations-section');
+                        const globalNoteSection = subjectForm.querySelector('.global-note-section');
+                        
+                        if (e.target.value === 'evaluations') {
+                            evaluationsSection.style.display = 'block';
+                            globalNoteSection.style.display = 'none';
+                        } else {
+                            evaluationsSection.style.display = 'none';
+                            globalNoteSection.style.display = 'block';
+                        }
+                    });
+                });
+                
+                // Gérer la case à cocher d'intervalle pour la note globale
+                const globalUseInterval = subjectForm.querySelector('.global-use-interval');
+                globalUseInterval.addEventListener('change', (e) => {
+                    const singleNote = subjectForm.querySelector('.global-single-note');
+                    const intervalNote = subjectForm.querySelector('.global-interval-note');
+                    
+                    if (e.target.checked) {
+                        singleNote.style.display = 'none';
+                        intervalNote.style.display = 'block';
+                    } else {
+                        singleNote.style.display = 'block';
+                        intervalNote.style.display = 'none';
+                    }
+                });
+                
+                // Gérer le bouton d'ajout d'évaluation
+                const addEvaluationButton = subjectForm.querySelector('.add-evaluation');
+                addEvaluationButton.addEventListener('click', () => {
+                    const evaluationForm = document.createElement('div');
+                    evaluationForm.className = 'evaluation-form mb-3 p-3 border rounded';
+                    evaluationForm.innerHTML = `
+                        <div class="mb-3">
+                            <label class="form-label">Nom de l'évaluation</label>
+                            <input type="text" class="form-control evaluation-name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Coefficient</label>
+                            <input type="number" class="form-control evaluation-coefficient" min="1" value="1">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input evaluation-use-interval" type="checkbox">
+                                <label class="form-check-label">
+                                    Utiliser un intervalle de notes
+                                </label>
+                            </div>
+                            <div class="evaluation-single-note mb-3">
+                                <label class="form-label">Note</label>
+                                <input type="number" class="form-control evaluation-note" min="0" max="20" step="0.1">
+                            </div>
+                            <div class="evaluation-interval-note mb-3" style="display: none;">
+                                <label class="form-label">Intervalle de notes</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control evaluation-note-min" placeholder="Min" min="0" max="20" step="0.1">
+                                    <span class="input-group-text">à</span>
+                                    <input type="number" class="form-control evaluation-note-max" placeholder="Max" min="0" max="20" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm remove-evaluation">Supprimer</button>
+                    `;
+                    
+                    // Ajouter le formulaire à la liste des évaluations
+                    const evaluationsList = subjectForm.querySelector('.evaluations-list');
+                    if (evaluationsList) {
+                        evaluationsList.appendChild(evaluationForm);
+                        
+                        // Gérer la case à cocher d'intervalle
+                        const useIntervalCheckbox = evaluationForm.querySelector('.evaluation-use-interval');
+                        useIntervalCheckbox.addEventListener('change', (e) => {
+                            const singleNote = evaluationForm.querySelector('.evaluation-single-note');
+                            const intervalNote = evaluationForm.querySelector('.evaluation-interval-note');
+                            
+                            if (e.target.checked) {
+                                singleNote.style.display = 'none';
+                                intervalNote.style.display = 'block';
+                            } else {
+                                singleNote.style.display = 'block';
+                                intervalNote.style.display = 'none';
+                            }
+                        });
+                        
+                        // Gérer le bouton de suppression
+                        const removeButton = evaluationForm.querySelector('.remove-evaluation');
+                        removeButton.addEventListener('click', () => {
+                            evaluationForm.remove();
+                        });
+                    }
+                });
+                
+                // Gérer le bouton de suppression
+                const removeButton = subjectForm.querySelector('.remove-ue-subject');
+                removeButton.addEventListener('click', () => {
+                    subjectForm.remove();
+                });
+            }
+        });
+    }
+
+    // Mise à jour de l'interface
+    updateUI();
+
+    document.getElementById('previousAverage').value = previousAverage;
+});
+
+// Mise à jour de l'interface
+function updateUI() {
+    const elementsList = document.getElementById('elementsList');
+    elementsList.innerHTML = '';
+    
+    elements.forEach((element, index) => {
+        const elementElement = document.createElement('div');
+        elementElement.className = 'list-group-item';
+        
+        // Calcul de la moyenne minimale et maximale pour cette UE
+        let ueMinTotal = 0;
+        let ueMaxTotal = 0;
+        let ueTotalCoefficient = 0;
+        
+        element.subjects.forEach(subject => {
+            let subjectMinTotal = 0;
+            let subjectMaxTotal = 0;
+            let subjectTotalCoefficient = 0;
+            
+            subject.evaluations.forEach(evaluation => {
+                if (evaluation.noteMin !== null && evaluation.noteMax !== null) {
+                    subjectMinTotal += evaluation.noteMin * evaluation.coefficient;
+                    subjectMaxTotal += evaluation.noteMax * evaluation.coefficient;
+                    subjectTotalCoefficient += evaluation.coefficient;
+                }
+            });
+            
+            if (subjectTotalCoefficient > 0) {
+                const subjectMinAverage = subjectMinTotal / subjectTotalCoefficient;
+                const subjectMaxAverage = subjectMaxTotal / subjectTotalCoefficient;
+                
+                ueMinTotal += subjectMinAverage * subject.coefficient;
+                ueMaxTotal += subjectMaxAverage * subject.coefficient;
+                ueTotalCoefficient += subject.coefficient;
+            }
+        });
+        
+        let ueAverageText = '';
+        if (ueTotalCoefficient > 0) {
+            const ueMinAverage = ueMinTotal / ueTotalCoefficient;
+            const ueMaxAverage = ueMaxTotal / ueTotalCoefficient;
+            ueAverageText = `<span class="ue-average">[${ueMinAverage.toFixed(2)} - ${ueMaxAverage.toFixed(2)}]</span>`;
+        }
+        
+        let subjectsHtml = '';
+        element.subjects.forEach((subject, subIndex) => {
+            let subjectHtml = '';
+            
+            if (subject.evaluations && subject.evaluations.length === 1) {
+                // Si une seule évaluation, afficher directement la note à la matière
+                const evaluation = subject.evaluations[0];
+                subjectHtml = `
+                    <div class="ms-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${subject.name}</strong> (Coeff: ${subject.coefficient})<br>
+                                Note: ${evaluation.noteMin !== null ? evaluation.noteMin : '?'} 
+                                ${evaluation.noteMax !== null && evaluation.noteMax !== evaluation.noteMin ? `à ${evaluation.noteMax}` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Si plusieurs évaluations, afficher le détail
+                let evaluationsHtml = '';
+                if (subject.evaluations && subject.evaluations.length > 0) {
+                    evaluationsHtml = '<div class="ms-3 mt-2">';
+                    subject.evaluations.forEach((evaluation, evalIndex) => {
+                        evaluationsHtml += `
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${evaluation.name}</strong> (Coeff: ${evaluation.coefficient})<br>
+                                        Note: ${evaluation.noteMin !== null ? evaluation.noteMin : '?'} 
+                                        ${evaluation.noteMax !== null && evaluation.noteMax !== evaluation.noteMin ? `à ${evaluation.noteMax}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    evaluationsHtml += '</div>';
+                }
+                
+                subjectHtml = `
+                    <div class="ms-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${subject.name}</strong> (Coeff: ${subject.coefficient})<br>
+                                ${evaluationsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            subjectsHtml += subjectHtml;
+        });
+        
+        elementElement.innerHTML = `
+            <div class="subject-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>UE: ${element.name}</strong> (Coeff: ${element.coefficient})
+                    </div>
+                    <div class="ue-average-container">
+                        ${ueAverageText}
+                    </div>
+                </div>
+                ${subjectsHtml}
+            </div>
+        `;
+        
+        elementsList.appendChild(elementElement);
+    });
+    
+    updatePredictions();
+}
+
+// Ajout d'un élément
+document.getElementById('addElement').addEventListener('click', () => {
+    const name = document.getElementById('ueName').value;
+    const coefficient = parseInt(document.getElementById('ueCoefficient').value);
+    
+    if (name && coefficient > 0) {
+        // Récupérer les matières de l'UE
+        const subjects = [];
+        const subjectForms = document.querySelectorAll('.ue-subject-form');
+        subjectForms.forEach(form => {
+            const subjectName = form.querySelector('.ue-subject-name').value;
+            const subjectCoefficient = parseInt(form.querySelector('.ue-subject-coefficient').value);
+            const subjectType = form.querySelector('input[name="subjectType"]:checked').value;
+            
+            // Récupérer les évaluations de la matière
+            const evaluations = [];
+            
+            if (subjectType === 'evaluations') {
+                // Mode évaluations multiples
+                const evaluationForms = form.querySelectorAll('.evaluation-form');
+                evaluationForms.forEach(evalForm => {
+                    const evaluationName = evalForm.querySelector('.evaluation-name').value;
+                    const evaluationCoefficient = parseInt(evalForm.querySelector('.evaluation-coefficient').value);
+                    const useInterval = evalForm.querySelector('.evaluation-use-interval').checked;
+                    
+                    let noteMin = null;
+                    let noteMax = null;
+                    
+                    if (useInterval) {
+                        noteMin = evalForm.querySelector('.evaluation-note-min').value ? 
+                            parseFloat(evalForm.querySelector('.evaluation-note-min').value) : null;
+                        noteMax = evalForm.querySelector('.evaluation-note-max').value ? 
+                            parseFloat(evalForm.querySelector('.evaluation-note-max').value) : null;
+                    } else {
+                        const note = evalForm.querySelector('.evaluation-note').value ? 
+                            parseFloat(evalForm.querySelector('.evaluation-note').value) : null;
+                        noteMin = note;
+                        noteMax = note;
+                    }
+                    
+                    if (evaluationName && evaluationCoefficient > 0) {
+                        evaluations.push({
+                            name: evaluationName,
+                            coefficient: evaluationCoefficient,
+                            noteMin,
+                            noteMax
+                        });
+                    }
+                });
+            } else {
+                // Mode note globale - créer une évaluation "Total"
+                const useInterval = form.querySelector('.global-use-interval').checked;
+                let noteMin = null;
+                let noteMax = null;
+                
+                if (useInterval) {
+                    noteMin = form.querySelector('.global-note-min').value ? 
+                        parseFloat(form.querySelector('.global-note-min').value) : null;
+                    noteMax = form.querySelector('.global-note-max').value ? 
+                        parseFloat(form.querySelector('.global-note-max').value) : null;
+                } else {
+                    const note = form.querySelector('.global-note').value ? 
+                        parseFloat(form.querySelector('.global-note').value) : null;
+                    noteMin = note;
+                    noteMax = note;
+                }
+                
+                if (noteMin !== null) {
+                    evaluations.push({
+                        name: 'Total',
+                        coefficient: 1,
+                        noteMin,
+                        noteMax
+                    });
+                }
+            }
+            
+            if (subjectName && subjectCoefficient > 0) {
+                subjects.push({
+                    name: subjectName,
+                    coefficient: subjectCoefficient,
+                    evaluations
+                });
+            }
+        });
+        
+        elements.push({ type: 'ue', name, coefficient, subjects });
+        setCookie('elements', JSON.stringify(elements), 365);
+        updateUI();
+        
+        // Réinitialisation du formulaire
+        document.getElementById('ueName').value = '';
+        document.getElementById('ueCoefficient').value = '6';
+        document.getElementById('ueSubjects').innerHTML = '';
+    }
+});
+
+// Mise à jour de la moyenne précédente
+document.getElementById('previousAverage').addEventListener('change', (e) => {
+    previousAverage = parseFloat(e.target.value) || 10;
+    setCookie('previousAverage', previousAverage, 365);
+    updatePredictions();
+});
+
+// Calcul des prédictions
+function updatePredictions() {
+    let totalCoefficient = 0;
+    let minTotal = 0;
+    let maxTotal = 0;
+    
+    elements.forEach(element => {
+        if (element.type === 'ue') {
+            let ueMinTotal = 0;
+            let ueMaxTotal = 0;
+            let ueTotalCoefficient = 0;
+            
+            element.subjects.forEach(subject => {
+                let subjectMinTotal = 0;
+                let subjectMaxTotal = 0;
+                let subjectTotalCoefficient = 0;
+                
+                subject.evaluations.forEach(evaluation => {
+                    if (evaluation.noteMin !== null && evaluation.noteMax !== null) {
+                        subjectMinTotal += evaluation.noteMin * evaluation.coefficient;
+                        subjectMaxTotal += evaluation.noteMax * evaluation.coefficient;
+                        subjectTotalCoefficient += evaluation.coefficient;
+                    }
+                });
+                
+                if (subjectTotalCoefficient > 0) {
+                    const subjectMinAverage = subjectMinTotal / subjectTotalCoefficient;
+                    const subjectMaxAverage = subjectMaxTotal / subjectTotalCoefficient;
+                    
+                    ueMinTotal += subjectMinAverage * subject.coefficient;
+                    ueMaxTotal += subjectMaxAverage * subject.coefficient;
+                    ueTotalCoefficient += subject.coefficient;
+                }
+            });
+            
+            if (ueTotalCoefficient > 0) {
+                const ueMinAverage = ueMinTotal / ueTotalCoefficient;
+                const ueMaxAverage = ueMaxTotal / ueTotalCoefficient;
+                
+                minTotal += ueMinAverage * element.coefficient;
+                maxTotal += ueMaxAverage * element.coefficient;
+                totalCoefficient += element.coefficient;
+            }
+        }
+    });
+    
+    let minAverage = 0;
+    let maxAverage = 0;
+    let successProbability = 0;
+    
+    if (totalCoefficient > 0) {
+        minAverage = minTotal / totalCoefficient;
+        maxAverage = maxTotal / totalCoefficient;
+        
+        // Calcul de la moyenne minimale et maximale sur l'année
+        const annualMinAverage = (previousAverage + minAverage) / 2;
+        const annualMaxAverage = (previousAverage + maxAverage) / 2;
+        
+        // Calcul de la probabilité de réussite
+        if (annualMinAverage >= 10) {
+            successProbability = 100;  // Si la pire moyenne annuelle possible est >= 10, 100% de réussite
+        } else if (annualMaxAverage < 10) {
+            successProbability = 0;    // Si la meilleure moyenne annuelle possible est < 10, 0% de réussite
+        } else {
+            // Calcul de la probabilité proportionnelle
+            const range = annualMaxAverage - annualMinAverage;
+            const distanceFrom10 = 10 - annualMinAverage;
+            successProbability = (distanceFrom10 / range) * 100;
+        }
+    }
+    
+    // Mise à jour de l'interface
+    document.getElementById('minAverage').textContent = minAverage.toFixed(2);
+    document.getElementById('maxAverage').textContent = maxAverage.toFixed(2);
+    document.getElementById('successProbability').textContent = 
+        `${successProbability.toFixed(1)}%`;
+} 
