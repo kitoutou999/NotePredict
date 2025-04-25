@@ -2,6 +2,10 @@
 
 NotePredict est une application web qui aide les étudiants à calculer et prédire leurs moyennes universitaires. Elle permet de gérer les Unités d'Enseignement (UE), les matières et les évaluations, avec des fonctionnalités avancées de prédiction de réussite.
 
+## Accès
+
+L'application est accessible en ligne à l'adresse : [kitoutou999.github.io/NotePredict](https://kitoutou999.github.io/NotePredict)
+
 ## Fonctionnalités
 
 - **Gestion des UE et matières**
