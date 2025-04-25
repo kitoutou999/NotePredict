@@ -19,7 +19,23 @@ function getCookie(name) {
 
 // Gestion des éléments
 let elements = JSON.parse(getCookie('elements') || '[]');
+let extremeElements = JSON.parse(getCookie('extremeElements') || '[]');
 let previousAverage = parseFloat(getCookie('previousAverage') || '10');
+
+// Fonction pour créer la copie extrême des éléments
+function createExtremeElements() {
+    extremeElements = JSON.parse(JSON.stringify(elements)); // Deep copy
+    extremeElements.forEach(element => {
+        element.subjects.forEach(subject => {
+            subject.evaluations.forEach(evaluation => {
+                if (evaluation.noteMin !== evaluation.noteMax) {
+                    evaluation.noteMin = 0;
+                }
+            });
+        });
+    });
+    setCookie('extremeElements', JSON.stringify(extremeElements), 365);
+}
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', () => {
@@ -231,12 +247,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('previousAverage').value = previousAverage;
 });
 
+// Gestion du mode extrême
+let isExtremeMode = false;
+const extremeModeButton = document.getElementById('extremeMode');
+
+extremeModeButton.addEventListener('click', () => {
+    isExtremeMode = !isExtremeMode;
+    extremeModeButton.classList.toggle('active');
+    if (isExtremeMode) {
+        createExtremeElements();
+    }
+    updateUI();
+});
+
 // Mise à jour de l'interface
 function updateUI() {
     const elementsList = document.getElementById('elementsList');
     elementsList.innerHTML = '';
     
-    elements.forEach((element, index) => {
+    const currentElements = isExtremeMode ? extremeElements : elements;
+    
+    currentElements.forEach((element, index) => {
         const elementElement = document.createElement('div');
         elementElement.className = 'list-group-item';
         
@@ -830,7 +861,9 @@ function updatePredictions() {
     let minTotal = 0;
     let maxTotal = 0;
     
-    elements.forEach(element => {
+    const currentElements = isExtremeMode ? extremeElements : elements;
+    
+    currentElements.forEach(element => {
         if (element.type === 'ue') {
             let ueMinTotal = 0;
             let ueMaxTotal = 0;
@@ -886,9 +919,11 @@ function updatePredictions() {
         } else if (maxAnnualAverage < 10) {
             successProbability = 0;
         } else {
+            // Calcul de la probabilité linéaire
             const neededAverage = 2 * 10 - previousAverage;
-        
-            successProbability = ((maxAverage - neededAverage) / (maxAverage - minAverage)) * 100;
+            const range = maxAverage - minAverage;
+            const position = (neededAverage - minAverage) / range;
+            successProbability = (1 - position) * 100;
         }
     }
 
@@ -1003,5 +1038,84 @@ document.getElementById('addElement').addEventListener('click', () => {
         document.getElementById('ueName').value = '';
         document.getElementById('ueCoefficient').value = '6';
         document.getElementById('ueSubjects').innerHTML = '';
+    }
+});
+
+// Gestion du thème
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = themeToggle.querySelector('i');
+
+// Vérifier le thème sauvegardé
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+updateThemeIcon(savedTheme);
+
+themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+});
+
+function updateThemeIcon(theme) {
+    themeIcon.className = theme === 'light' ? 'bi bi-moon-stars' : 'bi bi-sun';
+}
+
+// Gestion du partage de données
+const shareButton = document.getElementById('shareButton');
+const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+const shareCode = document.getElementById('shareCode');
+const copyCode = document.getElementById('copyCode');
+const importCode = document.getElementById('importCode');
+const importButton = document.getElementById('importButton');
+
+shareButton.addEventListener('click', () => {
+    // Générer le code de partage
+    const data = {
+        elements: elements,
+        previousAverage: previousAverage
+    };
+    const code = btoa(JSON.stringify(data));
+    shareCode.textContent = code;
+    shareModal.show();
+});
+
+copyCode.addEventListener('click', () => {
+    navigator.clipboard.writeText(shareCode.textContent).then(() => {
+        const originalText = copyCode.innerHTML;
+        copyCode.innerHTML = '<i class="bi bi-check-lg me-2"></i>Copié !';
+        setTimeout(() => {
+            copyCode.innerHTML = originalText;
+        }, 2000);
+    });
+});
+
+importButton.addEventListener('click', () => {
+    try {
+        const data = JSON.parse(atob(importCode.value));
+        if (data.elements && data.previousAverage !== undefined) {
+            elements = data.elements;
+            previousAverage = data.previousAverage;
+            
+            // Sauvegarder les données
+            setCookie('elements', JSON.stringify(elements), 365);
+            setCookie('previousAverage', previousAverage, 365);
+            
+            // Mettre à jour l'interface
+            document.getElementById('previousAverage').value = previousAverage;
+            updateUI();
+            
+            // Fermer la modale
+            shareModal.hide();
+            
+            // Afficher un message de succès
+            alert('Données importées avec succès !');
+        } else {
+            throw new Error('Format de données invalide');
+        }
+    } catch (error) {
+        alert('Erreur lors de l\'importation des données. Veuillez vérifier le code.');
     }
 }); 

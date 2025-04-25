@@ -9,18 +9,35 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="themeToggle">
+        <i class="bi bi-moon-stars"></i>
+    </button>
+
+    <!-- Share Button -->
+    <div class="share-container">
+        <button class="share-button" id="shareButton">
+            <i class="bi bi-share"></i>
+        </button>
+    </div>
+
     <div class="container">
-        <h1 class="text-center my-4">NotePredict</h1>
+        <h1 class="text-center my-4">
+            <i class="bi bi-calculator me-2"></i>
+            NotePredict
+        </h1>
         
         <div class="row">
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h3>Informations Générales</h3>
+                        <h3><i class="bi bi-info-circle me-2"></i>Informations Générales</h3>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="previousAverage" class="form-label">Moyenne du semestre précédent</label>
+                            <label for="previousAverage" class="form-label">
+                                <i class="bi bi-graph-up me-2"></i>Moyenne du semestre précédent
+                            </label>
                             <input type="number" class="form-control" id="previousAverage" min="0" max="20" step="0.1" value="10">
                         </div>
                     </div>
@@ -30,24 +47,32 @@
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h3>Ajouter une UE</h3>
+                        <h3><i class="bi bi-plus-circle me-2"></i>Ajouter une UE</h3>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Nom de l'UE</label>
+                            <label class="form-label">
+                                <i class="bi bi-book me-2"></i>Nom de l'UE
+                            </label>
                             <input type="text" class="form-control" id="ueName">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Coefficient</label>
+                            <label class="form-label">
+                                <i class="bi bi-123 me-2"></i>Coefficient
+                            </label>
                             <input type="number" class="form-control" id="ueCoefficient" min="1" value="6">
                         </div>
                         <div class="mb-3">
-                            <button type="button" class="btn btn-primary" id="addUESubject">Ajouter une matière à l'UE</button>
+                            <button type="button" class="btn btn-primary" id="addUESubject">
+                                <i class="bi bi-plus-lg me-2"></i>Ajouter une matière à l'UE
+                            </button>
                             <div id="ueSubjects" class="mt-3">
                                 <!-- Les matières de l'UE seront ajoutées ici -->
                             </div>
                         </div>
-                        <button type="button" class="btn btn-primary" id="addElement">Ajouter</button>
+                        <button type="button" class="btn btn-primary" id="addElement">
+                            <i class="bi bi-check-lg me-2"></i>Ajouter
+                        </button>
                     </div>
                 </div>
             </div>
@@ -55,7 +80,7 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h3>Éléments</h3>
+                <h3><i class="bi bi-list-ul me-2"></i>Éléments</h3>
             </div>
             <div class="card-body">
                 <div id="elementsList" class="list-group">
@@ -66,13 +91,59 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h3>Prédictions</h3>
+                <h3><i class="bi bi-graph-up-arrow me-2"></i>Prédictions</h3>
+                <button class="btn btn-warning btn-sm" id="extremeMode" title="Mode Extrême : Remplace les notes uniques min par 0">
+                    <i class="bi bi-lightning"></i>
+                </button>
             </div>
             <div class="card-body">
                 <div id="predictions">
-                    <p>Moyenne minimale possible: <span id="minAverage">-</span></p>
-                    <p>Moyenne maximale possible: <span id="maxAverage">-</span></p>
-                    <p>Probabilité de réussite: <span id="successProbability">-</span></p>
+                    <p>
+                        <i class="bi bi-arrow-down me-2"></i>
+                        Moyenne minimale possible: <span id="minAverage">-</span>
+                    </p>
+                    <p>
+                        <i class="bi bi-arrow-up me-2"></i>
+                        Moyenne maximale possible: <span id="maxAverage">-</span>
+                    </p>
+                    <p>
+                        <i class="bi bi-percent me-2"></i>
+                        Probabilité de réussite: <span id="successProbability">-</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal fade share-modal" id="shareModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-share me-2"></i>Partager vos données
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Copiez ce code pour partager vos données avec d'autres utilisateurs :</p>
+                    <div class="share-code" id="shareCode"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" id="copyCode">
+                            <i class="bi bi-clipboard me-2"></i>Copier le code
+                        </button>
+                    </div>
+                    <hr>
+                    <p>Ou collez un code reçu pour importer des données :</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="importCode" placeholder="Collez le code ici">
+                        <button class="btn btn-primary" id="importButton">
+                            <i class="bi bi-upload me-2"></i>Importer
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                 </div>
             </div>
         </div>
