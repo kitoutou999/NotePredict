@@ -21,6 +21,7 @@ function getCookie(name) {
 let elements = JSON.parse(getCookie('elements') || '[]');
 let extremeElements = JSON.parse(getCookie('extremeElements') || '[]');
 let previousAverage = parseFloat(getCookie('previousAverage') || '10');
+let useMaxForProbability = JSON.parse(getCookie('useMaxForProbability') || 'false');
 
 // Fonction pour créer la copie extrême des éléments
 function createExtremeElements() {
@@ -317,9 +318,11 @@ function updateUI() {
                     <div class="ms-3 mb-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>${subject.name}</strong> (Coeff: ${subject.coefficient})<br>
-                                Note: ${evaluation.noteMin !== null ? evaluation.noteMin : '?'} 
-                                ${evaluation.noteMax !== null && evaluation.noteMax !== evaluation.noteMin ? `à ${evaluation.noteMax}` : ''}
+                                <strong contenteditable="true" data-type="subject-name" data-ue-index="${index}" data-subject-index="${subIndex}">${subject.name}</strong> 
+                                (Coeff: <span contenteditable="true" data-type="subject-coefficient" data-ue-index="${index}" data-subject-index="${subIndex}">${subject.coefficient}</span>)<br>
+                                Note: <span contenteditable="true" data-type="evaluation-note" data-ue-index="${index}" data-subject-index="${subIndex}" data-eval-index="0">${evaluation.noteMin !== null ? evaluation.noteMin : '?'}</span>
+                                ${evaluation.noteMax !== null && evaluation.noteMax !== evaluation.noteMin ? 
+                                    `à <span contenteditable="true" data-type="evaluation-note-max" data-ue-index="${index}" data-subject-index="${subIndex}" data-eval-index="0">${evaluation.noteMax}</span>` : ''}
                             </div>
                         </div>
                     </div>
@@ -334,9 +337,11 @@ function updateUI() {
                             <div class="mb-2">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong>${evaluation.name}</strong> (Coeff: ${evaluation.coefficient})<br>
-                                        Note: ${evaluation.noteMin !== null ? evaluation.noteMin : '?'} 
-                                        ${evaluation.noteMax !== null && evaluation.noteMax !== evaluation.noteMin ? `à ${evaluation.noteMax}` : ''}
+                                        <strong contenteditable="true" data-type="evaluation-name" data-ue-index="${index}" data-subject-index="${subIndex}" data-eval-index="${evalIndex}">${evaluation.name}</strong> 
+                                        (Coeff: <span contenteditable="true" data-type="evaluation-coefficient" data-ue-index="${index}" data-subject-index="${subIndex}" data-eval-index="${evalIndex}">${evaluation.coefficient}</span>)<br>
+                                        Note: <span contenteditable="true" data-type="evaluation-note" data-ue-index="${index}" data-subject-index="${subIndex}" data-eval-index="${evalIndex}">${evaluation.noteMin !== null ? evaluation.noteMin : '?'}</span>
+                                        ${evaluation.noteMax !== null && evaluation.noteMax !== evaluation.noteMin ? 
+                                            `à <span contenteditable="true" data-type="evaluation-note-max" data-ue-index="${index}" data-subject-index="${subIndex}" data-eval-index="${evalIndex}">${evaluation.noteMax}</span>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -349,7 +354,8 @@ function updateUI() {
                     <div class="ms-3 mb-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>${subject.name}</strong> (Coeff: ${subject.coefficient})<br>
+                                <strong contenteditable="true" data-type="subject-name" data-ue-index="${index}" data-subject-index="${subIndex}">${subject.name}</strong> 
+                                (Coeff: <span contenteditable="true" data-type="subject-coefficient" data-ue-index="${index}" data-subject-index="${subIndex}">${subject.coefficient}</span>)<br>
                                 ${evaluationsHtml}
                             </div>
                         </div>
@@ -364,7 +370,8 @@ function updateUI() {
             <div class="subject-info">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <strong>UE: ${element.name}</strong> (Coeff: ${element.coefficient})
+                        <strong contenteditable="true" data-type="ue-name" data-ue-index="${index}">${element.name}</strong> 
+                        (Coeff: <span contenteditable="true" data-type="ue-coefficient" data-ue-index="${index}">${element.coefficient}</span>)
                     </div>
                     <div class="ue-average-container">
                         ${ueAverageText}
@@ -385,6 +392,91 @@ function updateUI() {
         elementsList.appendChild(elementElement);
     });
     
+    // Ajouter les gestionnaires d'événements pour les éléments modifiables
+    document.querySelectorAll('[contenteditable="true"]').forEach(element => {
+        element.addEventListener('blur', (e) => {
+            const type = e.target.dataset.type;
+            const ueIndex = parseInt(e.target.dataset.ueIndex);
+            const subjectIndex = e.target.dataset.subjectIndex ? parseInt(e.target.dataset.subjectIndex) : null;
+            const evalIndex = e.target.dataset.evalIndex ? parseInt(e.target.dataset.evalIndex) : null;
+            
+            let value = e.target.textContent.trim();
+            
+            // Conversion des valeurs numériques
+            if (type.includes('coefficient') || type.includes('note')) {
+                value = parseFloat(value);
+                if (isNaN(value)) {
+                    e.target.textContent = e.target.dataset.originalValue;
+                    return;
+                }
+            }
+            
+            // Mise à jour des données
+            const targetElements = isExtremeMode ? extremeElements : elements;
+            
+            switch(type) {
+                case 'ue-name':
+                    targetElements[ueIndex].name = value;
+                    break;
+                case 'ue-coefficient':
+                    targetElements[ueIndex].coefficient = value;
+                    break;
+                case 'subject-name':
+                    targetElements[ueIndex].subjects[subjectIndex].name = value;
+                    break;
+                case 'subject-coefficient':
+                    targetElements[ueIndex].subjects[subjectIndex].coefficient = value;
+                    break;
+                case 'evaluation-name':
+                    targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].name = value;
+                    break;
+                case 'evaluation-coefficient':
+                    targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].coefficient = value;
+                    break;
+                case 'evaluation-note':
+                    // Ne pas écraser la note maximale si elle existe et est différente
+                    if (targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMax !== null && 
+                        targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMax !== targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMin) {
+                        targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMin = value;
+                    } else {
+                        targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMin = value;
+                        targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMax = value;
+                    }
+                    break;
+                case 'evaluation-note-max':
+                    targetElements[ueIndex].subjects[subjectIndex].evaluations[evalIndex].noteMax = value;
+                    break;
+            }
+            
+            // Sauvegarder les modifications
+            if (isExtremeMode) {
+                setCookie('extremeElements', JSON.stringify(extremeElements), 365);
+            } else {
+                setCookie('elements', JSON.stringify(elements), 365);
+            }
+            updateUI();
+        });
+
+        // Empêcher le saut de ligne et valider avec Entrée
+        element.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur();
+            }
+        });
+        
+        // Sauvegarder la valeur originale pour la restauration en cas d'erreur
+        element.dataset.originalValue = element.textContent;
+    });
+    
+    // Ajouter les gestionnaires d'événements pour les boutons de suppression
+    document.querySelectorAll('.remove-ue').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const ueIndex = e.target.closest('.remove-ue').dataset.ueIndex;
+            removeUE(ueIndex);
+        });
+    });
+    
     // Ajouter les gestionnaires d'événements pour les boutons
     document.querySelectorAll('.edit-ue').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -393,12 +485,11 @@ function updateUI() {
         });
     });
     
-    document.querySelectorAll('.remove-ue').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const ueIndex = e.target.closest('.remove-ue').dataset.ueIndex;
-            removeUE(ueIndex);
-        });
-    });
+    // Mettre à jour l'état du switch de probabilité
+    const probabilitySwitch = document.getElementById('probabilitySwitch');
+    if (probabilitySwitch) {
+        probabilitySwitch.checked = useMaxForProbability;
+    }
     
     updatePredictions();
 }
@@ -911,19 +1002,35 @@ function updatePredictions() {
         minAverage = minTotal / totalCoefficient;
         maxAverage = maxTotal / totalCoefficient;
         
-        const minAnnualAverage = (previousAverage + minAverage) / 2;
-        const maxAnnualAverage = (previousAverage + 10) / 2; // On utilise toujours 10 comme maximum
-        
-        if (minAnnualAverage >= 10) {
-            successProbability = 100;
-        } else if (maxAnnualAverage < 10) {
-            successProbability = 0;
+        if (useMaxForProbability) {
+            // Calcul de la probabilité pour le semestre uniquement
+            if (minAverage >= 10) {
+                successProbability = 100;
+            } else if (maxAverage < 10) {
+                successProbability = 0;
+            } else {
+                const range = maxAverage - minAverage;
+                const position = (10 - minAverage) / range;
+                successProbability = (1 - position) * 100;
+            }
         } else {
-            // Calcul de la probabilité basée uniquement sur la moyenne minimale
-            const neededAverage = 2 * 10 - previousAverage;
-            const range = 10 - minAverage; // Intervalle entre la note minimale et 10
-            const position = (neededAverage - minAverage) / range;
-            successProbability = (1 - position) * 100;
+            // Calcul de la probabilité pour l'année
+            const minAnnualAverage = (previousAverage + minAverage) / 2;
+            const maxAnnualAverage = (previousAverage + maxAverage) / 2;
+            
+            if (minAnnualAverage >= 10) {
+                successProbability = 100;
+            } else if (maxAnnualAverage < 10) {
+                successProbability = 0;
+            } else {
+                // Pour avoir la moyenne sur l'année, il faut compenser la moyenne du semestre précédent
+                // Si previousAverage < 10, il faut une moyenne plus élevée au second semestre
+                // Si previousAverage > 10, on peut se permettre une moyenne plus basse
+                const neededAverage = 2 * 10 - previousAverage;
+                const range = maxAverage - minAverage;
+                const position = (neededAverage - minAverage) / range;
+                successProbability = (1 - position) * 100;
+            }
         }
     }
 
@@ -932,6 +1039,13 @@ function updatePredictions() {
     document.getElementById('maxAverage').textContent = maxAverage.toFixed(2);
     document.getElementById('successProbability').textContent = `${successProbability.toFixed(1)}%`;
 }
+
+// Gestion du switch de probabilité
+document.getElementById('probabilitySwitch').addEventListener('change', (e) => {
+    useMaxForProbability = e.target.checked;
+    setCookie('useMaxForProbability', useMaxForProbability, 365);
+    updatePredictions();
+});
 
 // Ajout d'un élément
 document.getElementById('addElement').addEventListener('click', () => {

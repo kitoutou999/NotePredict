@@ -459,4 +459,24 @@ h1 {
     background-color: var(--warning-color);
     border-color: var(--warning-color);
     color: var(--dark-color);
+}
+
+.probability-switch {
+    position: absolute;
+
+    right: 0;
+    bottom: 2.5rem;
 } 
+
+.form-check-input {
+    margin-top: 0;
+    transform: rotate(90deg);
+    
+}
+
+.form-check-label {
+    margin-top: 0;
+    position: relative;
+    top: -1.7rem;
+    right: 2rem;
+}
