@@ -912,16 +912,16 @@ function updatePredictions() {
         maxAverage = maxTotal / totalCoefficient;
         
         const minAnnualAverage = (previousAverage + minAverage) / 2;
-        const maxAnnualAverage = (previousAverage + maxAverage) / 2;
+        const maxAnnualAverage = (previousAverage + 10) / 2; // On utilise toujours 10 comme maximum
         
         if (minAnnualAverage >= 10) {
             successProbability = 100;
         } else if (maxAnnualAverage < 10) {
             successProbability = 0;
         } else {
-            // Calcul de la probabilité linéaire
+            // Calcul de la probabilité basée uniquement sur la moyenne minimale
             const neededAverage = 2 * 10 - previousAverage;
-            const range = maxAverage - minAverage;
+            const range = 10 - minAverage; // Intervalle entre la note minimale et 10
             const position = (neededAverage - minAverage) / range;
             successProbability = (1 - position) * 100;
         }
@@ -930,8 +930,7 @@ function updatePredictions() {
     // Mise à jour de l'interface
     document.getElementById('minAverage').textContent = minAverage.toFixed(2);
     document.getElementById('maxAverage').textContent = maxAverage.toFixed(2);
-    document.getElementById('successProbability').textContent =
-        `${successProbability.toFixed(1)}%`;
+    document.getElementById('successProbability').textContent = `${successProbability.toFixed(1)}%`;
 }
 
 // Ajout d'un élément
