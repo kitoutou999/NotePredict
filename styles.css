@@ -463,7 +463,6 @@ h1 {
 
 .probability-switch {
     position: absolute;
-
     right: 0;
     bottom: 2.5rem;
 } 
@@ -471,7 +470,13 @@ h1 {
 .form-check-input {
     margin-top: 0;
     transform: rotate(90deg);
-    
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .form-check-label {
@@ -479,4 +484,19 @@ h1 {
     position: relative;
     top: -1.7rem;
     right: 2rem;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .form-check-input {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .form-check-label {
+    color: var(--text-color);
 }
