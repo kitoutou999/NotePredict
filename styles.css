@@ -502,9 +502,7 @@ h1 {
 }
 
 
-.btn {
-    transition: transform 0.15s ease;
-}
-.btn:hover {
-    transform: translateY(-1px);
+@media print {
+    .btn, .theme-toggle, .share-container { display: none !important; }
+    body { background: white; color: black; }
 }
