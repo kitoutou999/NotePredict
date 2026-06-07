@@ -50,9 +50,9 @@ h1 {
 
 .card {
     background-color: var(--card-bg);
-    border-radius: 10px;
+    border-radius: 14px;
     box-shadow: var(--card-shadow);
-    transition: transform var(--transition-speed), background-color var(--transition-speed), box-shadow var(--transition-speed);
+    transition: transform var(--transition-speed), background-color var(--transition-speed);
     margin-bottom: 1.5rem;
     border: none;
 }
