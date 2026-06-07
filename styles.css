@@ -26,10 +26,6 @@
     --dark-color: #343a40;
 }
 
-html {
-    scroll-behavior: smooth;
-}
-
 body {
     background-color: var(--background-color);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -83,11 +79,7 @@ h1 {
     color: var(--light-color);
 }
 
-.card-html {
-    scroll-behavior: smooth;
-}
-
-body {
+.card-body {
     padding: 1.5rem;
 }
 
@@ -509,3 +501,8 @@ body {
     color: var(--text-color);
 }
 
+
+*:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
