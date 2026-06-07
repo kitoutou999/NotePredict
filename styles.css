@@ -502,7 +502,6 @@ h1 {
 }
 
 
-@media print {
-    .btn, .theme-toggle, .share-container { display: none !important; }
-    body { background: white; color: black; }
+input[type="number"] {
+    min-width: 80px;
 }
