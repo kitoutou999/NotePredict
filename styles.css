@@ -502,7 +502,5 @@ h1 {
 }
 
 
-::selection {
-    background-color: var(--primary-color);
-    color: white;
-}
+.gap-sm { gap: 0.5rem; }
+.gap-md { gap: 1rem; }
