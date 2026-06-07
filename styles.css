@@ -26,6 +26,10 @@
     --dark-color: #343a40;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     background-color: var(--background-color);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -79,7 +83,11 @@ h1 {
     color: var(--light-color);
 }
 
-.card-body {
+.card-html {
+    scroll-behavior: smooth;
+}
+
+body {
     padding: 1.5rem;
 }
 
@@ -500,3 +508,4 @@ h1 {
 [data-theme="dark"] .form-check-label {
     color: var(--text-color);
 }
+
