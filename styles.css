@@ -52,14 +52,13 @@ h1 {
     background-color: var(--card-bg);
     border-radius: 10px;
     box-shadow: var(--card-shadow);
-    transition: transform var(--transition-speed), background-color var(--transition-speed);
+    transition: transform var(--transition-speed), background-color var(--transition-speed), box-shadow var(--transition-speed);
     margin-bottom: 1.5rem;
     border: none;
 }
 
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
 .card-header {
