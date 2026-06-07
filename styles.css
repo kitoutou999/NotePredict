@@ -502,6 +502,7 @@ h1 {
 }
 
 
-input[type="number"] {
-    min-width: 80px;
+::selection {
+    background-color: var(--primary-color);
+    color: white;
 }
